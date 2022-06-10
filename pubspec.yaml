@@ -15,6 +15,7 @@ dependencies:
   flutter_background_service_android: 2.0.2
   flutter: 
     sdk: flutter
+  geolocator: ^8.2.1
 
 dev_dependencies: 
   flutter_lints: ^2.0.0
