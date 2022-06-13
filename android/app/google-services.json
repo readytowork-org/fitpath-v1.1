@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "833695415610",
+    "project_id": "fitpath-2ab83",
+    "storage_bucket": "fitpath-2ab83.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:833695415610:android:3a39350b3c47e73c636403",
+        "android_client_info": {
+          "package_name": "com.example.fitpath"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "833695415610-ovb316gtm1q66ep14h7ts67a1tmgmmvr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAEmbd8OqlelfvV18CT0SUfTOQ9Xd5o0Nk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "833695415610-ovb316gtm1q66ep14h7ts67a1tmgmmvr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
