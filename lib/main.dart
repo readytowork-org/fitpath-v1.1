@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
 import 'package:geolocator/geolocator.dart';
-
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -16,8 +16,10 @@ import 'dart:math' show pi, pow, cos, sin, asin, sqrt;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   await userPermission();
   await initializeService();
+
   runApp(
     GetMaterialApp(
       title: "Application",
@@ -100,6 +102,7 @@ bool onIosBackground(ServiceInstance service) {
 void onStart(ServiceInstance service) async {
   // Only available for flutter 3.0.0 and later
 
+  await Firebase.initializeApp();
   DartPluginRegistrant.ensureInitialized();
 
   // For flutter prior to version 3.0.0
@@ -173,13 +176,13 @@ void onStart(ServiceInstance service) async {
     await preferences.setString(
         'distanceTravelled', (distance.floor()).toString());
 
-    /// you can see this log in logcat
-    // print(
-    //     'FLUTTER BACKGROUND SERVICE: ${DateTime.now()} yeah ${currentUserLocation.latitude} ${currentUserLocation.longitude} hello $distance');
-    // print('$userLatitude, $userLongitude');
-    // print('${currentUserLocation.latitude}, ${currentUserLocation.longitude}');
-    print('$distance');
-
+    FirebaseFirestore.instance.collection('data').doc('fitpath').set({
+      'userCurrentLatitude': currentUserLocation.latitude,
+      'userCurrentLongitude': currentUserLocation.longitude,
+      'userLatitude': userLatitude,
+      'userLongitude': userLongitude,
+      'distanceTravelled': distance.floor(),
+    });
     // test using external plugin
     final deviceInfo = DeviceInfoPlugin();
     String? device;

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:pedometer/pedometer.dart';
@@ -30,29 +31,32 @@ class _PedometerScreenState extends State<PedometerScreen> {
   }
 
   void getUserLocationDetails() async {
-    final SharedPreferences prefs = await preferences;
-    userMainLatitude = double.parse(prefs.getString('userLatitude') ?? "0");
-    userMainLongitude = double.parse(prefs.getString('userLongitude') ?? "0");
-
-    userCurrentLatitude =
-        double.parse(prefs.getString('userCurrentLatitude') ?? "0");
-    userCurrentLongitude =
-        double.parse(prefs.getString('userCurrentLongitude') ?? "0");
-
-    distanceTravelled =
-        double.parse(prefs.getString('distanceTravelled') ?? "0");
+    FirebaseFirestore.instance
+        .collection('data')
+        .doc('fitpath')
+        .get()
+        .then((value) {
+      print(value.data());
+      setState(() {
+        userMainLatitude = value['userLatitude'];
+        userMainLongitude = value['userLongitude'];
+        userCurrentLatitude = value['userCurrentLatitude'];
+        userCurrentLongitude = value['userCurrentLongitude'];
+        distanceTravelled = double.parse(value['distanceTravelled'].toString());
+      });
+      print('called getUserLocationDetails');
+    });
   }
 
   void onStepCount(StepCount event) {
-    print('step taken ${event.steps}');
-    print(event);
+    // print('step taken ${event.steps}');
     setState(() {
       _steps = event.steps.toString();
     });
   }
 
   void onPedestrianStatusChanged(PedestrianStatus event) {
-    print(event);
+    getUserLocationDetails();
     setState(() {
       _status = event.status;
     });
@@ -95,67 +99,53 @@ class _PedometerScreenState extends State<PedometerScreen> {
           appBar: AppBar(
             title: const Text('FITPATH'),
           ),
-          body: Center(
-            child: Column(
+          body: showData()),
+    );
+  }
+
+  //show firestore snapshot
+  Widget showData() {
+    var snapshots = FirebaseFirestore.instance
+        .collection('data')
+        .doc("fitpath")
+        .snapshots();
+    return StreamBuilder<DocumentSnapshot>(
+      stream: snapshots,
+      builder:
+          (BuildContext context, AsyncSnapshot<DocumentSnapshot> snapshot) {
+        if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        }
+        switch (snapshot.connectionState) {
+          case ConnectionState.waiting:
+            return const Text('Loading...');
+          default:
+            return Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                Text(
-                  'Distance Travelled: ${distanceTravelled ?? ""}',
-                  style: const TextStyle(fontSize: 20),
-                ),
-                const SizedBox(
-                  height: 15,
-                ),
-                Text(
-                  'Initial Latitude: ${userMainLatitude ?? ""}, \nInitial Longitude : ${userMainLongitude ?? ""}',
-                  style: const TextStyle(fontSize: 20),
-                ),
-                const SizedBox(
-                  height: 15,
-                ),
-                Text(
-                  'Current Latitude: ${userCurrentLatitude ?? ""}, \nCurrent Longitude : ${userCurrentLongitude ?? ""}',
-                  style: const TextStyle(fontSize: 20),
-                ),
-                const SizedBox(
-                  height: 15,
-                ),
-                const Text(
-                  'Steps taken:',
-                  style: TextStyle(fontSize: 30),
-                ),
-                Text(
-                  _steps,
-                  style: const TextStyle(fontSize: 60),
-                ),
-                const Divider(
-                  height: 100,
-                  thickness: 0,
-                  color: Colors.white,
-                ),
-                const Text(
-                  'Pedestrian status:',
-                  style: TextStyle(fontSize: 30),
-                ),
-                Icon(
-                  _status == 'walking'
-                      ? Icons.directions_walk
-                      : _status == 'stopped'
-                          ? Icons.accessibility_new
-                          : Icons.error,
-                  size: 100,
+              children: [
+                Center(
+                  child: Text(
+                      "Distance Traveled:'${snapshot.data!['distanceTravelled']}'"),
                 ),
                 Center(
                   child: Text(
-                    _status,
-                    style: _status == 'walking' || _status == 'stopped'
-                        ? const TextStyle(fontSize: 30)
-                        : const TextStyle(fontSize: 20, color: Colors.red),
-                  ),
-                )
+                      "User Current Latitude:'${snapshot.data!['userCurrentLatitude']}'"),
+                ),
+                Center(
+                  child: Text(
+                      "User Current Longitude:'${snapshot.data!['userCurrentLongitude']}'"),
+                ),
+                Center(
+                    child: Text(
+                        "User Main Latitude:'${snapshot.data!['userLatitude']}'")),
+                Center(
+                    child: Text(
+                        "User Main Longitude:'${snapshot.data!['userLongitude']}'")),
+                Center(child: Text("Steps: $_steps")),
               ],
-            ),
-          )),
+            );
+        }
+      },
     );
   }
 }
