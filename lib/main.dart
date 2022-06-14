@@ -176,18 +176,13 @@ void onStart(ServiceInstance service) async {
     await preferences.setString(
         'distanceTravelled', (distance.floor()).toString());
 
-    /// you can see this log in logcat
-    // print(
-    //     'FLUTTER BACKGROUND SERVICE: ${DateTime.now()} yeah ${currentUserLocation.latitude} ${currentUserLocation.longitude} hello $distance');
-    // print('$userLatitude, $userLongitude');
-    // print('${currentUserLocation.latitude}, ${currentUserLocation.longitude}');
     FirebaseFirestore.instance.collection('data').doc('fitpath').set({
-      'userLatitude': currentUserLocation.latitude,
-      'userLongitude': currentUserLocation.longitude,
-      'distanceTravelled': distance,
-      'time': DateTime.now(),
+      'userCurrentLatitude': currentUserLocation.latitude,
+      'userCurrentLongitude': currentUserLocation.longitude,
+      'userLatitude': userLatitude,
+      'userLongitude': userLongitude,
+      'distanceTravelled': distance.floor(),
     });
-    print('distance travelled ${distance.floor()}');
     // test using external plugin
     final deviceInfo = DeviceInfoPlugin();
     String? device;
