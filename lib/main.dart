@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:background_fetch/background_fetch.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:fitpath/app/modules/home/bindings/home_binding.dart';
+import 'package:fitpath/app/modules/home/controllers/points_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
@@ -14,17 +16,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'app/routes/app_pages.dart';
 import 'dart:math' show pi, pow, cos, sin, asin, sqrt;
 
+final PoinstsController pointsController = Get.put(PoinstsController());
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
   await userPermission();
   await initializeService();
-
+  initPlatformState();
+  BackgroundFetch.scheduleTask(TaskConfig(
+      taskId: "com.foo.customtask",
+      delay: 6000, // milliseconds
+      periodic: false));
   runApp(
     GetMaterialApp(
       title: "Application",
       initialRoute: AppPages.INITIAL,
       getPages: AppPages.routes,
+      //initial dependencies
+      initialBinding: HomeBinding(),
     ),
   );
 }
@@ -102,7 +111,6 @@ bool onIosBackground(ServiceInstance service) {
 void onStart(ServiceInstance service) async {
   // Only available for flutter 3.0.0 and later
 
-  await Firebase.initializeApp();
   DartPluginRegistrant.ensureInitialized();
 
   // For flutter prior to version 3.0.0
@@ -135,10 +143,10 @@ void onStart(ServiceInstance service) async {
     final hello = preferences.getString("hello");
 
     if (service is AndroidServiceInstance) {
-      // service.setForegroundNotificationInfo(
-      //   title: "My App Service",
-      //   content: "Updated at ${DateTime.now()}",
-      // );
+      service.setForegroundNotificationInfo(
+        title: "My App Service",
+        content: "Updated at ${DateTime.now()}",
+      );
     }
 
     currentUserLocation = await Geolocator.getCurrentPosition(
@@ -171,18 +179,10 @@ void onStart(ServiceInstance service) async {
     // calculate the result in meters
     double distance = (c * radius * 1000);
 
-    // controller.add(distance);
-
     await preferences.setString(
         'distanceTravelled', (distance.floor()).toString());
 
-    FirebaseFirestore.instance.collection('data').doc('fitpath').set({
-      'userCurrentLatitude': currentUserLocation.latitude,
-      'userCurrentLongitude': currentUserLocation.longitude,
-      'userLatitude': userLatitude,
-      'userLongitude': userLongitude,
-      'distanceTravelled': distance.floor(),
-    });
+    pointsController.addPoints('50');
     // test using external plugin
     final deviceInfo = DeviceInfoPlugin();
     String? device;
@@ -195,7 +195,6 @@ void onStart(ServiceInstance service) async {
       final iosInfo = await deviceInfo.iosInfo;
       device = iosInfo.model;
     }
-
     service.invoke(
       'update',
       {
@@ -204,4 +203,36 @@ void onStart(ServiceInstance service) async {
       },
     );
   });
+}
+
+Future<void> initPlatformState() async {
+  // Configure BackgroundFetch.
+  int status = await BackgroundFetch.configure(
+      BackgroundFetchConfig(
+          minimumFetchInterval: 1,
+          stopOnTerminate: false,
+          enableHeadless: true,
+          requiresBatteryNotLow: false,
+          requiresCharging: false,
+          requiresStorageNotLow: false,
+          requiresDeviceIdle: false,
+          requiredNetworkType: NetworkType.ANY), (String taskId) async {
+    // <-- Event handler
+    // This is the fetch-event callback.
+
+    // IMPORTANT:  You must signal completion of your task or the OS can punish your app
+    // for taking too long in the background.
+    BackgroundFetch.finish(taskId);
+  }, (String taskId) async {
+    // <-- Task timeout handler.
+    pointsController.addPoints('50');
+    // This task has exceeded its allowed running-time.  You must stop what you're doing and immediately .finish(taskId)
+    print("[BackgroundFetch] TASK TIMEOUT taskId: $taskId");
+    BackgroundFetch.finish(taskId);
+  });
+  print('[BackgroundFetch] configure success: $status');
+
+  // If the widget was removed from the tree while the asynchronous platform
+  // message was in flight, we want to discard the reply rather than calling
+  // setState to update our non-existent appearance.
 }
