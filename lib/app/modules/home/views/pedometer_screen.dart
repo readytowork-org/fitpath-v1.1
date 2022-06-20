@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fitpath/main.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:pedometer/pedometer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PedometerScreen extends StatefulWidget {
@@ -12,8 +12,6 @@ class PedometerScreen extends StatefulWidget {
 }
 
 class _PedometerScreenState extends State<PedometerScreen> {
-  late Stream<StepCount> _stepCountStream;
-  late Stream<PedestrianStatus> _pedestrianStatusStream;
   double? userCurrentLatitude;
   double? userCurrentLongitude;
   double? userMainLatitude;
@@ -25,7 +23,6 @@ class _PedometerScreenState extends State<PedometerScreen> {
 
   @override
   void initState() {
-    initPlatformState();
     getUserLocationDetails();
     super.initState();
   }
@@ -44,49 +41,7 @@ class _PedometerScreenState extends State<PedometerScreen> {
         userCurrentLongitude = value['userCurrentLongitude'];
         distanceTravelled = double.parse(value['distanceTravelled'].toString());
       });
-      print('called getUserLocationDetails');
     });
-  }
-
-  void onStepCount(StepCount event) {
-    // print('step taken ${event.steps}');
-    setState(() {
-      _steps = event.steps.toString();
-    });
-  }
-
-  void onPedestrianStatusChanged(PedestrianStatus event) {
-    getUserLocationDetails();
-    setState(() {
-      _status = event.status;
-    });
-  }
-
-  void onPedestrianStatusError(error) {
-    print('onPedestrianStatusError: $error');
-    setState(() {
-      _status = 'Pedestrian Status not available';
-    });
-    print(_status);
-  }
-
-  void onStepCountError(error) {
-    print('onStepCountError: $error');
-    setState(() {
-      _steps = 'Step Count not available';
-    });
-  }
-
-  void initPlatformState() {
-    _pedestrianStatusStream = Pedometer.pedestrianStatusStream;
-    _pedestrianStatusStream
-        .listen(onPedestrianStatusChanged)
-        .onError(onPedestrianStatusError);
-
-    _stepCountStream = Pedometer.stepCountStream;
-    _stepCountStream.listen(onStepCount).onError(onStepCountError);
-
-    if (!mounted) return;
   }
 
   @override
@@ -99,11 +54,20 @@ class _PedometerScreenState extends State<PedometerScreen> {
           appBar: AppBar(
             title: const Text('FITPATH'),
           ),
-          body: showData()),
+          body: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              showData(),
+              ElevatedButton(
+                  onPressed: () {
+                    pointsController.addPoints('10');
+                  },
+                  child: const Text('Add Points')),
+            ],
+          )),
     );
   }
 
-  //show firestore snapshot
   Widget showData() {
     var snapshots = FirebaseFirestore.instance
         .collection('data')
