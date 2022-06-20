@@ -1,3 +1,3 @@
-const BASEURL = 'http://192.168.1.76/test';
+const BASEURL = 'http://fitpath.changer.ga';
 
 const ADD_POINTS = '$BASEURL/addPoints.php';
